@@ -66,6 +66,18 @@ def main(argv: Optional[list[str]] = None) -> int:
     except httpx.HTTPError as exc:
         print(f"assay: could not reach SEC EDGAR ({exc})", file=sys.stderr)
         return 2
+
+    # Attach a market price (Tier 0) if a provider is configured. Offline -> no price, and the
+    # report omits the comparison rather than failing.
+    from .data.prices import latest_price
+
+    try:
+        price = latest_price(ticker)
+        if price is not None:
+            inputs.price = price
+    except (NotImplementedError, RuntimeError, LookupError, httpx.HTTPError) as exc:
+        print(f"assay: price unavailable ({exc}); continuing without it", file=sys.stderr)
+
     print(_report_for(inputs))
     return 0
 
