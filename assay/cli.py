@@ -46,12 +46,18 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 0
 
     ticker = argv[1] if cmd == "value" and len(argv) > 1 else cmd
+
+    import httpx
+
     from .data.edgar import fetch_company_inputs
 
     try:
         inputs = fetch_company_inputs(ticker)
-    except NotImplementedError as exc:
+    except (LookupError, NotImplementedError) as exc:
         print(f"assay: {exc}", file=sys.stderr)
+        return 2
+    except httpx.HTTPError as exc:
+        print(f"assay: could not reach SEC EDGAR ({exc})", file=sys.stderr)
         return 2
     print(_report_for(inputs))
     return 0

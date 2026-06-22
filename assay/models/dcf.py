@@ -97,7 +97,7 @@ class DcfModel:
                 "Yearly growth, 10y",
                 a["growth_10y"],
                 "percent",
-                "5-yr revenue CAGR",
+                "default; not yet computed from filings",
                 "how fast yearly cash profit rises over the next decade",
             ),
             Assumption(
