@@ -71,6 +71,9 @@ class CompanyInputs:
     free_cash_flow_ttm: Optional[Figure] = None  # Tier 1 (cash-flow statement)
     net_debt: Optional[Figure] = None  # Tier 1 (balance sheet)
     revenue_ttm: Optional[Figure] = None  # Tier 1
+    #: A growth assumption derived from the company's own history (e.g. revenue CAGR), if available.
+    #: The data layer suggests it; the DCF uses it unless the caller overrides growth explicitly.
+    suggested_growth: Optional[Assumption] = None
     figures: dict[str, Figure] = field(default_factory=dict)
 
     def all_figures(self) -> list[Figure]:

@@ -21,8 +21,8 @@ from ..models.dcf import DcfModel
 from .triangulate import Triangulation
 from .valuability import Valuability
 
-#: Growth points (decimal) shown in the Layer 3 sensitivity table.
-_SENSITIVITY_GROWTHS = [0.02, 0.04, 0.06, 0.08]
+#: How far the Layer 3 sensitivity table steps around the base growth (decimal).
+_SENSITIVITY_OFFSETS = (-0.04, -0.02, 0.0, 0.02, 0.04)
 
 
 # --------------------------------------------------------------------------- formatting helpers
@@ -125,12 +125,17 @@ def build_report(
     if primary is None and triangulation.valued:
         primary = triangulation.valued[0]
 
-    # Sensitivity: vary growth, hold the other assumptions at their defaults. DCF only.
+    # Sensitivity: vary growth around the base case, holding the base's other assumptions.
     sensitivity: list[tuple[float, float]] = []
-    if primary is not None and primary.method == DcfModel.name:
+    if primary is not None and primary.method == DcfModel.name and primary.value is not None:
+        used = {a.key: a.value for a in primary.assumptions}
+        g0 = used.get("growth_10y", DCF_DEFAULTS["growth_10y"])
+        terminal = used.get("terminal_growth", DCF_DEFAULTS["terminal_growth"])
+        wacc = used.get("wacc", DCF_DEFAULTS["wacc"])
         dcf = DcfModel()
-        for g in _SENSITIVITY_GROWTHS:
-            ps = dcf.per_share(inputs, g, DCF_DEFAULTS["terminal_growth"], DCF_DEFAULTS["wacc"])
+        growths = sorted({round(max(0.0, g0 + d), 4) for d in _SENSITIVITY_OFFSETS})
+        for g in growths:
+            ps = dcf.per_share(inputs, g, terminal, wacc)
             if ps is not None:
                 sensitivity.append((g, ps))
 

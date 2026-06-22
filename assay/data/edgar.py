@@ -24,7 +24,7 @@ from typing import Any, Callable, Optional
 
 import httpx
 
-from ..models.base import CompanyInputs
+from ..models.base import Assumption, CompanyInputs
 from ..provenance import Figure, Source, Tier
 
 COMPANY_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
@@ -32,6 +32,17 @@ COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.js
 
 #: Forms that report a full fiscal year. startswith() so amendments (10-K/A) count too.
 _ANNUAL_FORM_PREFIXES = ("10-K", "20-F", "40-F")
+
+#: Revenue tags, oldest-style first. Filers migrate between these over the years, so the history
+#: is stitched across all of them.
+_REVENUE_TAGS = [
+    ("us-gaap", "Revenues"),
+    ("us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax"),
+    ("us-gaap", "SalesRevenueNet"),
+]
+
+#: A 10-year DCF should not extrapolate a wild growth rate, so the data-derived suggestion is capped.
+_GROWTH_FLOOR, _GROWTH_CAP = 0.0, 0.15
 
 
 def user_agent() -> str:
@@ -120,6 +131,74 @@ def _pick_instant(entries: list[dict]) -> Optional[dict]:
         if best is None or (end, e.get("filed", "")) > (best["end"], best.get("filed", "")):
             best = e
     return best
+
+
+def _annual_series(facts: dict, candidates: list[tuple[str, str]], units: list[str]) -> list[dict]:
+    """All full-year observations across candidate tags, deduped by period end (latest filed wins)."""
+    root = facts.get("facts", {})
+    by_end: dict[str, dict] = {}
+    for namespace, concept in candidates:
+        node = root.get(namespace, {}).get(concept)
+        if not node:
+            continue
+        for unit in units:
+            for e in node.get("units", {}).get(unit, []) or []:
+                if not _is_annual(e):
+                    continue
+                start, end = e.get("start"), e.get("end")
+                if not start or not end:
+                    continue
+                try:
+                    days = (date.fromisoformat(end) - date.fromisoformat(start)).days
+                except ValueError:
+                    continue
+                if not 330 <= days <= 400:
+                    continue
+                prev = by_end.get(end)
+                if prev is None or e.get("filed", "") > prev.get("filed", ""):
+                    by_end[end] = e
+    return sorted(by_end.values(), key=lambda e: e["end"])
+
+
+def revenue_cagr(series: list[dict], max_years: int = 5) -> Optional[tuple[float, int]]:
+    """Compound annual growth over the last ``max_years`` of an annual series.
+
+    Returns (cagr, years_spanned), or None if there is too little data or a non-positive endpoint.
+    """
+    if len(series) < 2:
+        return None
+    points = series[-(max_years + 1) :]
+    first, last = float(points[0]["val"]), float(points[-1]["val"])
+    if first <= 0 or last <= 0:
+        return None
+    years = date.fromisoformat(points[-1]["end"]).year - date.fromisoformat(points[0]["end"]).year
+    if years <= 0:
+        return None
+    return (last / first) ** (1 / years) - 1, years
+
+
+def _suggested_growth(facts: dict) -> Optional[Assumption]:
+    """A growth assumption derived from the company's own revenue history, capped for sanity.
+
+    The basis label states the raw CAGR (and the cap if applied), so the report stays honest about
+    where the number came from.
+    """
+    result = revenue_cagr(_annual_series(facts, _REVENUE_TAGS, ["USD"]))
+    if result is None:
+        return None
+    raw, years = result
+    capped = max(_GROWTH_FLOOR, min(_GROWTH_CAP, raw))
+    basis = f"{years}-yr revenue CAGR {raw * 100:.1f}%"
+    if capped != raw:
+        basis += f", capped to {capped * 100:.0f}%"
+    return Assumption(
+        "growth_10y",
+        "Yearly growth, 10y",
+        capped,
+        "percent",
+        basis,
+        "how fast yearly cash profit rises over the next decade",
+    )
 
 
 def _concept(
@@ -244,16 +323,7 @@ def parse_company_facts(facts: dict, cik: int, ticker: str = "") -> CompanyInput
         nd = float(debt[0]["val"]) - float(cash[0]["val"])
         net_debt_fig = Figure(nd, "USD", _source(cik, debt[0], "LongTermDebt-Cash"), "Net debt")
 
-    revenue = _concept(
-        facts,
-        [
-            ("us-gaap", "Revenues"),
-            ("us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax"),
-            ("us-gaap", "SalesRevenueNet"),
-        ],
-        ["USD"],
-        _pick_annual,
-    )
+    revenue = _concept(facts, _REVENUE_TAGS, ["USD"], _pick_annual)
     revenue_fig = (
         Figure(
             float(revenue[0]["val"]),
@@ -273,4 +343,5 @@ def parse_company_facts(facts: dict, cik: int, ticker: str = "") -> CompanyInput
         free_cash_flow_ttm=fcf_fig,
         net_debt=net_debt_fig,
         revenue_ttm=revenue_fig,
+        suggested_growth=_suggested_growth(facts),
     )

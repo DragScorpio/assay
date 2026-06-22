@@ -68,8 +68,13 @@ class DcfModel:
     def value(
         self, inputs: CompanyInputs, assumptions: Optional[dict[str, float]] = None
     ) -> ModelResult:
-        a = {**DEFAULTS, **(assumptions or {})}
-        base = self.per_share(inputs, a["growth_10y"], a["terminal_growth"], a["wacc"])
+        overrides = assumptions or {}
+        growth_assumption = self._resolve_growth(inputs, overrides)
+        growth = growth_assumption.value
+        terminal = overrides.get("terminal_growth", DEFAULTS["terminal_growth"])
+        wacc = overrides.get("wacc", DEFAULTS["wacc"])
+
+        base = self.per_share(inputs, growth, terminal, wacc)
         if base is None:
             return ModelResult(
                 method=self.name,
@@ -82,28 +87,17 @@ class DcfModel:
             )
 
         # The band moves the two assumptions that dominate the answer: growth and the discount rate.
-        low = self.per_share(
-            inputs, a["growth_10y"] - _GROWTH_BAND, a["terminal_growth"], a["wacc"] + _WACC_BAND
-        )
-        high = self.per_share(
-            inputs, a["growth_10y"] + _GROWTH_BAND, a["terminal_growth"], a["wacc"] - _WACC_BAND
-        )
+        low = self.per_share(inputs, growth - _GROWTH_BAND, terminal, wacc + _WACC_BAND)
+        high = self.per_share(inputs, growth + _GROWTH_BAND, terminal, wacc - _WACC_BAND)
         _vals = sorted(v for v in (low, high) if v is not None)
         lo, hi = (_vals[0], _vals[-1]) if len(_vals) == 2 else (base, base)
 
         used = [
-            Assumption(
-                "growth_10y",
-                "Yearly growth, 10y",
-                a["growth_10y"],
-                "percent",
-                "default; not yet computed from filings",
-                "how fast yearly cash profit rises over the next decade",
-            ),
+            growth_assumption,
             Assumption(
                 "terminal_growth",
                 "Forever-growth",
-                a["terminal_growth"],
+                terminal,
                 "percent",
                 "near long-run economy growth",
                 "how fast it grows after year 10, kept near the economy's pace",
@@ -111,7 +105,7 @@ class DcfModel:
             Assumption(
                 "wacc",
                 "Discount rate",
-                a["wacc"],
+                wacc,
                 "percent",
                 "CAPM: risk-free rate plus a risk premium",
                 "how hard we shrink future dollars to value them in today's money",
@@ -129,4 +123,29 @@ class DcfModel:
             assumptions=used,
             inputs=inputs_used,
             notes="Two-stage DCF: explicit growth for 10 years, then a perpetuity at forever-growth.",
+        )
+
+    @staticmethod
+    def _resolve_growth(inputs: CompanyInputs, overrides: dict[str, float]) -> Assumption:
+        """Growth precedence: an explicit user override, else a data-derived suggestion, else the
+        conservative default. The returned Assumption carries an honest basis for the report."""
+        plain = "how fast yearly cash profit rises over the next decade"
+        if "growth_10y" in overrides:
+            return Assumption(
+                "growth_10y",
+                "Yearly growth, 10y",
+                overrides["growth_10y"],
+                "percent",
+                "your override",
+                plain,
+            )
+        if inputs.suggested_growth is not None:
+            return inputs.suggested_growth
+        return Assumption(
+            "growth_10y",
+            "Yearly growth, 10y",
+            DEFAULTS["growth_10y"],
+            "percent",
+            "default; not yet computed from filings",
+            plain,
         )
