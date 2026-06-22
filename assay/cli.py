@@ -30,6 +30,13 @@ def _report_for(inputs: CompanyInputs) -> str:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    # Load a local .env (gitignored) so the SEC User-Agent and any keys work without shell exports.
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        pass
     # The report is plain Markdown; force UTF-8 so it prints on Windows consoles (cp1252) too.
     try:
         sys.stdout.reconfigure(encoding="utf-8")
