@@ -1,0 +1,78 @@
+# Assay
+
+**Assay tells you what a US-listed company is *worth*, from primary-source facts, with every number traceable back to the filing it came from.** Price is what the market pays today. Value is what the cash and assets are actually worth. Assay measures the second one, and shows its work.
+
+The name is deliberate: to *assay* is to test ore and determine its true metal content. That is what this does to a business.
+
+> **Status: scaffold.** The architecture, the data-credibility model, and the report shape are in place, and `assay demo` runs the whole pipeline end to end on a fictional company with no API key. Real data adapters (SEC EDGAR, FRED, prices) are stubbed with their endpoints documented and filled in next.
+
+## Why this is not another stock-valuation site
+
+The category is not empty. Morningstar, Simply Wall St, stockanalysis.com, GuruFocus and others all print a "fair value." Assay's whole point is a different *discipline*, and it is the combination that is rare:
+
+| | Typical valuation sites | **Assay** |
+|---|---|---|
+| Where the numbers come from | a vendor's pre-chewed dataset | straight from the regulator (SEC EDGAR, FRED), every figure tagged with its source |
+| When fundamentals don't apply | prints a DCF number anyway | **refuses honestly**: "this can't be valued on fundamentals, here is only the floor" |
+| Mixing data of different quality | sentiment, technicals, fundamentals blended | **tiered**: a Tier 3 rumor never silently touches a Tier 1 number |
+| How many methods | usually one (a DCF) | **triangulation**: three independent methods, and where they disagree is itself a signal |
+| Who computes the value | increasingly an LLM that can hallucinate | **deterministic code**; the LLM only writes prose and is *forbidden* from stating a number the math didn't produce |
+| Who it's for | depends | a non-expert can read it (plain words up front), an expert can audit it (exact terms one tap away) |
+
+This is not a blue ocean and the README won't pretend it is. It is a defensible point of view: **provenance, honest refusal, tiered truth, and no AI-invented numbers.** If a salesperson chasing the day's hype loves the output, something has gone wrong.
+
+**Assay is not investment advice.** It outputs a reasoned valuation and its provenance. What you do with the gap between value and price is yours.
+
+## What the output looks like
+
+A single report, layered so you can stop at any depth (this is the design target; see [`docs/DESIGN.md`](docs/DESIGN.md)):
+
+- **Layer 0 (Verdict).** One honest sentence. "Worth $34 to $53 (base $44); market pays $48.20; the whole gap rides on one assumption: long-run growth."
+- **Layer 1 (Triangulation).** Three independent methods side by side, versus price.
+- **Layer 2 (Derivation).** The math, and the source of every input.
+- **Layer 3 (Assumptions).** The handful of future guesses, each overridable, with a sensitivity table and Conservative / Base / Optimistic stances.
+- **Layer 4 (Market mirror).** Analyst targets, clearly labeled as opinion, computed *after* and never fed into the value. The gap is the product.
+- Plus a **valuability** banner (how much of the value rests on hard data versus narrative) and a **provenance ledger** (every figure, its tier, its source).
+
+## The data-credibility tiers
+
+Assay never claims a number is "true." It ranks every number by how hard it is to lie about, and carries that tier with the number everywhere.
+
+| Tier | Name | What it is | Trust |
+|---|---|---|---|
+| **0** | Market fact | traded prices, shares outstanding, dividends paid | highest |
+| **1** | Audited disclosure | SEC filings, regulator macro data (FRED) | high |
+| **2** | Derived / opinion | ratios, analyst estimates and targets | cross-check only |
+| **3** | Noise | news tone, pundits, social | excluded from value |
+
+## Quickstart
+
+```bash
+uv venv && uv pip install -e ".[dev]"   # or: python -m venv .venv && pip install -e ".[dev]"
+assay demo                               # full report on a fictional company, no API key needed
+pytest                                   # unit tests
+```
+
+Real tickers need data keys (all free, all documented in [`.env.example`](.env.example)): a SEC EDGAR User-Agent, a FRED key, and one price provider. Assay runs offline by default; keys only widen what it can fetch.
+
+## How it works
+
+1. **Data** (`assay/data`): per-source adapters fetch primary figures and tag each with its `Tier` and `Source`. SEC EDGAR for filings, FRED for the risk-free rate, a price API for the quote. Nothing downstream accepts a bare number.
+2. **Models** (`assay/models`): each valuation method (DCF, earnings power, asset value) is an isolated module with one contract, tier-tagged figures plus explicit assumptions in, a value range out. They never read each other's state.
+3. **Engine** (`assay/engine`): runs every method (`triangulate`), scores how anchorable the company is (`valuability`), and assembles the layered report (`report`), all deterministic.
+4. **Narrate** (`assay/narrate`): *optional*. An LLM behind a provider-agnostic interface writes the plain-English prose around the numbers. A deterministic guard rejects any prose that introduces a number not already in the computed report.
+
+For the reasoning behind every choice, see [`docs/DESIGN.md`](docs/DESIGN.md).
+
+## Layout
+
+```
+assay/      data (tier-tagged adapters) · models (isolated valuation methods) · engine (triangulate, valuability, report) · narrate (optional LLM prose + grounding guard)
+docs/       DESIGN.md: architecture, philosophy, the tiers and layers
+tests/      unit tests (provenance, DCF, the no-invented-number guard)
+data/       gitignored cache for fetched filings and API responses
+```
+
+## License
+
+MIT. Uses only public, unrestricted libraries and public data (SEC EDGAR, FRED).

@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets / local config
+.env
+*.local.*
+
+# Cached API responses + downloaded filings: fetch them, don't commit them
+data/cache/
+data/.llm_cache/
