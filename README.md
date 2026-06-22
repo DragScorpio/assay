@@ -1,6 +1,10 @@
 # Assay
 
-**Assay tells you what a US-listed company is *worth*, from primary-source facts, with every number traceable back to the filing it came from.** Price is what the market pays today. Value is what the cash and assets are actually worth. Assay measures the second one, and shows its work.
+Stepping into 2026, I found myself doubting something basic: do I actually understand how the economy and the markets work? Prices jump on news that is half rumor and already stale by the time it reaches me. Official figures get quietly revised a quarter later. Every few weeks a new idea (AI, quantum, crypto) insists the old rules are dead. In that noise it is easy to chase the tide and call it investing, and most people who chase it lose.
+
+So I wanted to look the other way, toward the part that does not move. Long before today's panic, careful people worked out how to tell what a business is actually worth, and that arithmetic does not care about inflation scares or a viral post. A company is worth the cash it can produce and the assets it holds. That durable, almost stubborn idea of value is the thing I wanted in my own hands, so I built a tool for it.
+
+**That tool is Assay. It tells you what a US-listed company is *worth*, from primary-source facts, with every number traceable back to the filing it came from.** Price is what the market pays today. Value is what the cash and assets are actually worth. Assay measures the second one, and shows its work.
 
 The name is deliberate: to *assay* is to test ore and determine its true metal content. That is what this does to a business.
 
