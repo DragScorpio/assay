@@ -78,6 +78,8 @@ assay-ui            # or: streamlit run assay/ui/app.py
 
 Type a ticker, then drag the assumption sliders (growth, discount rate, forever-growth) and watch the valuation and the triangulation recompute live. Same engine, same numbers, a friendlier view.
 
+![assay-ui, the local app on MSFT: the intrinsic-value range, base case vs market price, and the triangulation chart](docs/images/assay-ui.png)
+
 ## How it works
 
 1. **Data** (`assay/data`): per-source adapters fetch primary figures and tag each with its `Tier` and `Source`. SEC EDGAR for filings, FRED for the risk-free rate, a price API for the quote. Nothing downstream accepts a bare number.
