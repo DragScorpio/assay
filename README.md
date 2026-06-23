@@ -57,7 +57,7 @@ assay demo                               # full report on a fictional company, n
 pytest                                   # unit tests
 ```
 
-Real tickers need data keys (all free, all documented in [`.env.example`](.env.example)): a SEC EDGAR User-Agent, a FRED key, and one price provider. Assay runs offline by default; keys only widen what it can fetch.
+No API keys or signup required. `assay AAPL` works out of the box: filings come free from SEC EDGAR (which only asks for a contact string in `ASSAY_SEC_USER_AGENT`), and prices come from a free, keyless source. Optional keys (Tiingo for prices, FRED for the discount rate) only upgrade data quality; they never gate the app.
 
 ## How it works
 

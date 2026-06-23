@@ -2,8 +2,35 @@
 
 import pytest
 
-from assay.data.prices import _parse_tiingo, latest_price
+from assay.data.prices import _parse_tiingo, _parse_yahoo, latest_price
 from assay.provenance import Tier
+
+
+def test_parse_yahoo_takes_regular_market_price_no_key_needed():
+    data = {
+        "chart": {
+            "result": [
+                {
+                    "meta": {
+                        "regularMarketPrice": 201.5,
+                        "regularMarketTime": 1750363200,
+                        "currency": "USD",
+                        "symbol": "AAPL",
+                    }
+                }
+            ],
+            "error": None,
+        }
+    }
+    fig = _parse_yahoo(data, "aapl")
+    assert fig.value == 201.5
+    assert fig.tier == Tier.MARKET  # a price is a Tier 0 market fact
+    assert fig.source.name == "Yahoo Finance"
+
+
+def test_parse_yahoo_unknown_ticker_raises():
+    with pytest.raises(LookupError):
+        _parse_yahoo({"chart": {"result": [], "error": {"code": "Not Found"}}}, "ZZZZ")
 
 
 def test_parse_tiingo_takes_the_latest_close():
