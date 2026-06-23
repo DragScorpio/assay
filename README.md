@@ -46,6 +46,18 @@ A single report, layered so you can stop at any depth (full reasoning in [`docs/
 - **Layer 4 (Market mirror).** Analyst targets, clearly labeled as opinion, computed *after* and never fed into the value. The gap is the product.
 - Plus a **valuability** banner (how much of the value rests on hard data versus narrative) and a **provenance ledger** (every figure, its tier, its source).
 
+## Commodities
+
+Assay also values commodities, on their own terms. A commodity produces no cash, so there is no discounted cash flow and no intrinsic value the way a business has one. The honest anchor is the **cost of production**: the marginal (high-cost) producer's cost, the floor below which supply contracts and the price tends to recover. Assay reports the live spot price against that floor and is plain that the premium above it is the market's story, not a fundamental value.
+
+```bash
+assay gold        # also: oil, silver, natgas, copper (the UI handles them too)
+```
+
+![assay gold, the spot price against the cost-of-production floor; gold's premium is monetary, not fundamental](docs/images/assay-gold.png)
+
+Gold is the sharpest case. It pays nothing and is held, not consumed, so most of its price is monetary and store-of-value demand far above the production floor. Assay grounds the floor and refuses to fake a value for the rest, because whether that premium is justified is a question of conviction, not calculation. (The floor is a curated industry estimate, the one place Assay leans on a hand-set number, and its tier label says so.)
+
 ## The data-credibility tiers
 
 Assay never claims a number is "true." It ranks every number by how hard it is to lie about, and carries that tier with the number everywhere.
