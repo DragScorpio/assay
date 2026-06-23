@@ -335,13 +335,47 @@ def parse_company_facts(facts: dict, cik: int, ticker: str = "") -> CompanyInput
         else None
     )
 
+    oi = _concept(facts, [("us-gaap", "OperatingIncomeLoss")], ["USD"], _pick_annual)
+    operating_income_fig = (
+        Figure(
+            float(oi[0]["val"]),
+            "USD",
+            _source(cik, oi[0], oi[1]),
+            _fy_label("Operating income", oi[0]),
+        )
+        if oi
+        else None
+    )
+    eq = _concept(facts, [("us-gaap", "StockholdersEquity")], ["USD"], _pick_instant)
+    equity_fig = (
+        Figure(float(eq[0]["val"]), "USD", _source(cik, eq[0], eq[1]), "Stockholders equity")
+        if eq
+        else None
+    )
+    gw = _concept(facts, [("us-gaap", "Goodwill")], ["USD"], _pick_instant)
+    goodwill_fig = (
+        Figure(float(gw[0]["val"]), "USD", _source(cik, gw[0], gw[1]), "Goodwill") if gw else None
+    )
+    intan = _concept(
+        facts, [("us-gaap", "IntangibleAssetsNetExcludingGoodwill")], ["USD"], _pick_instant
+    )
+    intangibles_fig = (
+        Figure(float(intan[0]["val"]), "USD", _source(cik, intan[0], intan[1]), "Intangible assets")
+        if intan
+        else None
+    )
+
     return CompanyInputs(
         ticker=ticker,
         name=name,
-        price=None,  # Tier 0, filled by the price adapter (next in v0.2)
+        price=None,  # Tier 0, filled by the price adapter
         shares_outstanding=shares_fig,
         free_cash_flow_ttm=fcf_fig,
         net_debt=net_debt_fig,
         revenue_ttm=revenue_fig,
+        operating_income=operating_income_fig,
+        stockholders_equity=equity_fig,
+        goodwill=goodwill_fig,
+        intangibles=intangibles_fig,
         suggested_growth=_suggested_growth(facts),
     )

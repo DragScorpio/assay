@@ -71,6 +71,10 @@ class CompanyInputs:
     free_cash_flow_ttm: Optional[Figure] = None  # Tier 1 (cash-flow statement)
     net_debt: Optional[Figure] = None  # Tier 1 (balance sheet)
     revenue_ttm: Optional[Figure] = None  # Tier 1
+    operating_income: Optional[Figure] = None  # Tier 1 (EBIT) — for earnings power
+    stockholders_equity: Optional[Figure] = None  # Tier 1 (balance sheet) — for asset value
+    goodwill: Optional[Figure] = None  # Tier 1, optional — subtracted for tangible book
+    intangibles: Optional[Figure] = None  # Tier 1, optional — subtracted for tangible book
     #: A growth assumption derived from the company's own history (e.g. revenue CAGR), if available.
     #: The data layer suggests it; the DCF uses it unless the caller overrides growth explicitly.
     suggested_growth: Optional[Assumption] = None
@@ -84,6 +88,10 @@ class CompanyInputs:
             self.free_cash_flow_ttm,
             self.net_debt,
             self.revenue_ttm,
+            self.operating_income,
+            self.stockholders_equity,
+            self.goodwill,
+            self.intangibles,
         ]
         return [f for f in named if f is not None] + list(self.figures.values())
 

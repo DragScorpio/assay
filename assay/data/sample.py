@@ -24,4 +24,6 @@ def acme_inputs() -> CompanyInputs:
         free_cash_flow_ttm=Figure(520_000_000, "USD", _FILING, "Free cash flow (TTM)"),
         net_debt=Figure(400_000_000, "USD", _FILING, "Net debt"),
         revenue_ttm=Figure(4_000_000_000, "USD", _FILING, "Revenue (TTM)"),
+        operating_income=Figure(700_000_000, "USD", _FILING, "Operating income"),
+        stockholders_equity=Figure(2_500_000_000, "USD", _FILING, "Stockholders equity"),
     )

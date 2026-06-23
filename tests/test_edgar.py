@@ -153,6 +153,50 @@ def test_missing_concepts_degrade_to_none():
     assert ci.free_cash_flow_ttm is None
     assert ci.shares_outstanding is None
     assert ci.net_debt is None
+    assert ci.operating_income is None
+    assert ci.stockholders_equity is None
+
+
+def test_parses_operating_income_and_equity_for_the_other_methods():
+    facts = {
+        "entityName": "Methods Co",
+        "facts": {
+            "us-gaap": {
+                "OperatingIncomeLoss": {
+                    "units": {
+                        "USD": [
+                            {
+                                "start": "2023-10-01",
+                                "end": "2024-09-28",
+                                "val": 120_000_000_000,
+                                "fy": 2024,
+                                "form": "10-K",
+                                "filed": "2024-11-01",
+                                "accn": "a",
+                            },
+                        ]
+                    }
+                },
+                "StockholdersEquity": {
+                    "units": {
+                        "USD": [
+                            {
+                                "end": "2024-09-28",
+                                "val": 57_000_000_000,
+                                "fy": 2024,
+                                "form": "10-K",
+                                "filed": "2024-11-01",
+                                "accn": "a",
+                            },
+                        ]
+                    }
+                },
+            }
+        },
+    }
+    ci = parse_company_facts(facts, cik=1, ticker="X")
+    assert ci.operating_income.value == 120_000_000_000
+    assert ci.stockholders_equity.value == 57_000_000_000
 
 
 def test_prefers_latest_period_across_candidate_tags():

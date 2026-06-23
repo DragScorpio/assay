@@ -90,6 +90,11 @@ def _collect_allowed(report: Report) -> set[float]:
         allowed |= _variants(fig.value / 1e6)  # the $M rendering
         allowed |= _variants(fig.value / 1e9)  # the $B rendering
 
+    for result in report.triangulation.valued:
+        if result.value is not None:
+            for x in (result.value.low, result.value.base, result.value.high):
+                allowed |= _variants(x)
+
     if report.primary is not None and report.primary.value is not None:
         r = report.primary.value
         for x in (r.low, r.base, r.high):
@@ -193,10 +198,12 @@ def _triangulation_table(report: Report) -> str:
         "|---|---|---|",
     ]
     for r in report.triangulation.results:
-        if r.value is not None:
-            val = f"{fmt_share(r.value.low)} to {fmt_share(r.value.high)} (base {fmt_share(r.value.base)})"
-        else:
+        if r.value is None:
             val = "_declined_"
+        elif abs(r.value.high - r.value.low) < 0.01:
+            val = f"~{fmt_share(r.value.base)} (floor)"  # a single-value method, e.g. asset floor
+        else:
+            val = f"{fmt_share(r.value.low)} to {fmt_share(r.value.high)} (base {fmt_share(r.value.base)})"
         lines.append(f"| {r.method} | {r.plain_question} | {val} |")
     price = report.inputs.price
     if price is not None:
