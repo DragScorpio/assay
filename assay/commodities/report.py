@@ -39,6 +39,30 @@ def fmt_unit(fig: Figure) -> str:
     return fmt_value(fig.value, fig.unit)
 
 
+def _span_years(span: str) -> int:
+    try:
+        start, end = span.split("-")
+        return int(end) - int(start)
+    except (ValueError, AttributeError):
+        return 0
+
+
+def pct_reading(pct: float, span: str) -> str:
+    """Plain reading of a monetary percentile, e.g. 'near a 26-year high (pricier than 98% of ...)'."""
+    years = _span_years(span)
+    if pct >= 90:
+        head = f"near a {years}-year high" if years else "near a record high"
+    elif pct >= 70:
+        head = "historically high"
+    elif pct >= 30:
+        head = "mid-range"
+    elif pct >= 10:
+        head = "historically low"
+    else:
+        head = f"near a {years}-year low" if years else "near a record low"
+    return f"{head} (pricier than {pct:.0f}% of {span})"
+
+
 def assess_commodity(
     commodity: Commodity,
     spot: Optional[Figure],
@@ -125,13 +149,11 @@ def render_commodity_markdown(report: CommodityReport) -> str:
         gauges = []
         if lens is not None and lens.real_pct is not None:
             gauges.append(
-                f"its inflation-adjusted price is higher than {lens.real_pct:.0f}% of its "
-                f"{lens.real_span} history"
+                f"its inflation-adjusted price is {pct_reading(lens.real_pct, lens.real_span)}"
             )
         if lens is not None and lens.m2_pct is not None:
             gauges.append(
-                f"versus US money supply (M2) it is higher than {lens.m2_pct:.0f}% of its "
-                f"{lens.m2_span} history"
+                f"versus the money supply (M2) it is {pct_reading(lens.m2_pct, lens.m2_span)}"
             )
         if gauges:
             verdict += (
@@ -194,13 +216,13 @@ def render_commodity_markdown(report: CommodityReport) -> str:
         ]
         if lens.real_pct is not None:
             out.append(
-                f"| Real price (purchasing power) | higher than {lens.real_pct:.0f}% of {lens.real_span} "
-                "| Yahoo history deflated by CPI (FRED) |"
+                f"| Real price (purchasing power) | {pct_reading(lens.real_pct, lens.real_span)} "
+                "| Yahoo price deflated by CPI (FRED) |"
             )
         if lens.m2_pct is not None:
             out.append(
-                f"| Price vs money supply (M2) | higher than {lens.m2_pct:.0f}% of {lens.m2_span} "
-                "| Yahoo history vs M2 (FRED) |"
+                f"| Price vs money supply (M2) | {pct_reading(lens.m2_pct, lens.m2_span)} "
+                "| Yahoo price vs M2 (FRED) |"
             )
         out += [
             "",

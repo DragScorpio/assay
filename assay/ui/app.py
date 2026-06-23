@@ -14,7 +14,7 @@ import streamlit as st
 
 from assay.commodities.pipeline import value_commodity
 from assay.commodities.registry import resolve_commodity
-from assay.commodities.report import fmt_unit, fmt_value, render_commodity_markdown
+from assay.commodities.report import fmt_unit, fmt_value, pct_reading, render_commodity_markdown
 from assay.engine.report import fmt_pct, fmt_share, render_markdown
 from assay.pipeline import load_inputs, report_for
 
@@ -67,9 +67,9 @@ if commodity is not None:
         lens = creport.monetary_lens
         bits = []
         if lens.real_pct is not None:
-            bits.append(f"purchasing power higher than {lens.real_pct:.0f}% of {lens.real_span}")
+            bits.append(f"after inflation, {pct_reading(lens.real_pct, lens.real_span)}")
         if lens.m2_pct is not None:
-            bits.append(f"vs money supply higher than {lens.m2_pct:.0f}% of {lens.m2_span}")
+            bits.append(f"vs money supply, {pct_reading(lens.m2_pct, lens.m2_span)}")
         if bits:
             st.markdown(
                 "**Monetary context** (relative gauges, not a value): " + "; ".join(bits) + "."
