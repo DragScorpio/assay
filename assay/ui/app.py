@@ -15,6 +15,12 @@ import streamlit as st
 from assay.engine.report import fmt_pct, fmt_share, render_markdown
 from assay.pipeline import load_inputs, report_for
 
+
+def _no_latex(md: str) -> str:
+    """Escape '$' so Streamlit markdown does not read dollar amounts as LaTeX math."""
+    return md.replace("$", "\\$")
+
+
 st.set_page_config(page_title="Assay", layout="centered")
 st.title("Assay")
 st.caption(
@@ -68,7 +74,13 @@ st.markdown(f"**Valuability: :{color}[{level}].** {report.valuability.rationale}
 
 if report.primary is not None and report.primary.value is not None:
     v = report.primary.value
-    st.markdown(f"### Intrinsic value: {fmt_share(v.low)} to {fmt_share(v.high)} per share")
+    st.markdown(
+        _no_latex(f"### Intrinsic value: {fmt_share(v.low)} to {fmt_share(v.high)} per share")
+    )
+    st.caption(
+        "What the business is worth today under a plausible band of assumptions. A sanity check on "
+        "the price, not a forecast of where the price will go."
+    )
     cols = st.columns(2)
     cols[0].metric("Base case", fmt_share(v.base))
     if report.inputs.price is not None:
@@ -112,4 +124,4 @@ if rows:
 
 # --- the full deterministic report, every layer and source ---
 with st.expander("Full report (every layer, every source)"):
-    st.markdown(render_markdown(report))
+    st.markdown(_no_latex(render_markdown(report)))
