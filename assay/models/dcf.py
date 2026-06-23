@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .base import Assumption, CompanyInputs, ModelResult, ValueRange
+from .base import Assumption, CompanyInputs, ModelResult, ValueRange, resolve_discount_rate
 
 #: Defaults are deliberately conservative and sit near long-run norms. Each is overridable.
 DEFAULTS: dict[str, float] = {
@@ -72,7 +72,8 @@ class DcfModel:
         growth_assumption = self._resolve_growth(inputs, overrides)
         growth = growth_assumption.value
         terminal = overrides.get("terminal_growth", DEFAULTS["terminal_growth"])
-        wacc = overrides.get("wacc", DEFAULTS["wacc"])
+        wacc_assumption = resolve_discount_rate(inputs, overrides)
+        wacc = wacc_assumption.value
 
         base = self.per_share(inputs, growth, terminal, wacc)
         if base is None:
@@ -102,14 +103,7 @@ class DcfModel:
                 "near long-run economy growth",
                 "how fast it grows after year 10, kept near the economy's pace",
             ),
-            Assumption(
-                "wacc",
-                "Discount rate",
-                wacc,
-                "percent",
-                "CAPM: risk-free rate plus a risk premium",
-                "how hard we shrink future dollars to value them in today's money",
-            ),
+            wacc_assumption,
         ]
         inputs_used = [
             f

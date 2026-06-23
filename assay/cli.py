@@ -78,6 +78,16 @@ def main(argv: Optional[list[str]] = None) -> int:
     except (NotImplementedError, RuntimeError, LookupError, httpx.HTTPError) as exc:
         print(f"assay: price unavailable ({exc}); continuing without it", file=sys.stderr)
 
+    # Attach a live, keyless discount rate (FRED). On failure the methods use the default rate.
+    from .data.fred import discount_rate_assumption
+
+    try:
+        rate = discount_rate_assumption()
+        if rate is not None:
+            inputs.suggested_discount_rate = rate
+    except httpx.HTTPError as exc:
+        print(f"assay: live discount rate unavailable ({exc}); using the default", file=sys.stderr)
+
     print(_report_for(inputs))
     return 0
 

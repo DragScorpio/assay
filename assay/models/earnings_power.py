@@ -11,10 +11,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .base import Assumption, CompanyInputs, ModelResult, ValueRange
+from .base import Assumption, CompanyInputs, ModelResult, ValueRange, resolve_discount_rate
 
 _DEFAULT_TAX = 0.21  # US statutory corporate rate, used as a normalized tax on operating profit
-_DEFAULT_WACC = 0.09
 _WACC_BAND = 0.01
 
 
@@ -37,7 +36,8 @@ class EarningsPowerModel:
     ) -> ModelResult:
         a = assumptions or {}
         tax = a.get("tax_rate", _DEFAULT_TAX)
-        wacc = a.get("wacc", _DEFAULT_WACC)
+        wacc_assumption = resolve_discount_rate(inputs, a)
+        wacc = wacc_assumption.value
 
         base = self._per_share(inputs, tax, wacc)
         if base is None:
@@ -62,14 +62,7 @@ class EarningsPowerModel:
                 "US statutory rate (normalized)",
                 "tax taken out of operating profit",
             ),
-            Assumption(
-                "wacc",
-                "Discount rate",
-                wacc,
-                "percent",
-                "CAPM: risk-free rate plus a risk premium",
-                "how hard we shrink future dollars to value them in today's money",
-            ),
+            wacc_assumption,
         ]
         inputs_used = [
             f

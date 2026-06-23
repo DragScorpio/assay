@@ -78,6 +78,8 @@ class CompanyInputs:
     #: A growth assumption derived from the company's own history (e.g. revenue CAGR), if available.
     #: The data layer suggests it; the DCF uses it unless the caller overrides growth explicitly.
     suggested_growth: Optional[Assumption] = None
+    #: A discount rate derived from the live risk-free rate (FRED) plus an equity risk premium.
+    suggested_discount_rate: Optional[Assumption] = None
     figures: dict[str, Figure] = field(default_factory=dict)
 
     def all_figures(self) -> list[Figure]:
@@ -94,6 +96,29 @@ class CompanyInputs:
             self.intangibles,
         ]
         return [f for f in named if f is not None] + list(self.figures.values())
+
+
+DEFAULT_DISCOUNT_RATE = 0.09
+
+
+def resolve_discount_rate(inputs: CompanyInputs, overrides: dict[str, float]) -> Assumption:
+    """Discount-rate precedence: an explicit override, else a live (FRED) suggestion, else the
+    conservative default. Shared by the DCF and earnings-power methods so they stay consistent."""
+    plain = "how hard we shrink future dollars to value them in today's money"
+    if "wacc" in overrides:
+        return Assumption(
+            "wacc", "Discount rate", overrides["wacc"], "percent", "your override", plain
+        )
+    if inputs.suggested_discount_rate is not None:
+        return inputs.suggested_discount_rate
+    return Assumption(
+        "wacc",
+        "Discount rate",
+        DEFAULT_DISCOUNT_RATE,
+        "percent",
+        "default; no live rate available",
+        plain,
+    )
 
 
 @runtime_checkable
