@@ -20,6 +20,7 @@ DEFAULT_EQUITY_RISK_PREMIUM = 0.05  # a standard long-run equity premium
 CPI_SERIES = (
     "CPIAUCSL"  # CPI for All Urban Consumers; deflates commodity prices into today's dollars
 )
+M2_SERIES = "M2SL"  # M2 money supply; the gauge for a metal's price versus dollar debasement
 
 
 def risk_free_rate(client: Optional[httpx.Client] = None) -> Optional[float]:

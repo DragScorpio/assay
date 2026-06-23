@@ -63,6 +63,17 @@ if commodity is not None:
             f"range {fmt_value(rp.low, creport.commodity.unit)} to {fmt_value(rp.high, creport.commodity.unit)}",
             delta_color="off",
         )
+    if creport.monetary_lens is not None:
+        lens = creport.monetary_lens
+        bits = []
+        if lens.real_pct is not None:
+            bits.append(f"purchasing power higher than {lens.real_pct:.0f}% of {lens.real_span}")
+        if lens.m2_pct is not None:
+            bits.append(f"vs money supply higher than {lens.m2_pct:.0f}% of {lens.m2_span}")
+        if bits:
+            st.markdown(
+                "**Monetary context** (relative gauges, not a value): " + "; ".join(bits) + "."
+            )
     st.caption(
         "A commodity has no cash flow, so no intrinsic value like a business. The floor is the "
         "marginal cost of production; for a consumed commodity the long-run real price is the demand "

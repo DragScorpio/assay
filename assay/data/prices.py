@@ -25,6 +25,9 @@ import httpx
 from ..provenance import Figure, Source, Tier
 
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=1d&interval=1d"
+YAHOO_HISTORY_URL = (
+    "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range={range}&interval={interval}"
+)
 TIINGO_PRICES_URL = "https://api.tiingo.com/tiingo/daily/{ticker}/prices"
 
 # Yahoo's endpoint rejects requests without a browser-like User-Agent.
@@ -80,6 +83,43 @@ def _parse_yahoo(data: dict, ticker: str) -> Figure:
     )
     source = Source("Yahoo Finance", Tier.MARKET, f"{ticker.upper()} regularMarketPrice", as_of)
     return Figure(float(price), "USD/share", source, "Market price")
+
+
+def yahoo_history(
+    symbol: str, range: str = "max", interval: str = "1mo", client: Optional[httpx.Client] = None
+) -> list[tuple[str, float]]:
+    """Fetch a price history from Yahoo's chart endpoint as [(date, close), ...], keyless."""
+    owns = client is None
+    client = client or httpx.Client(timeout=30.0)
+    try:
+        resp = client.get(
+            YAHOO_HISTORY_URL.format(ticker=symbol, range=range, interval=interval),
+            headers={"User-Agent": _BROWSER_UA},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    finally:
+        if owns:
+            client.close()
+    return _parse_yahoo_history(data)
+
+
+def _parse_yahoo_history(data: dict) -> list[tuple[str, float]]:
+    """Parse Yahoo chart JSON into (date, close) rows, skipping null closes. Pure, so it is testable."""
+    results = (data.get("chart") or {}).get("result") or []
+    if not results:
+        return []
+    result = results[0]
+    timestamps = result.get("timestamp") or []
+    quote = ((result.get("indicators") or {}).get("quote") or [{}])[0]
+    closes = quote.get("close") or []
+    out: list[tuple[str, float]] = []
+    for ts, close in zip(timestamps, closes):
+        if close is None or not isinstance(ts, (int, float)):
+            continue
+        date = datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+        out.append((date, float(close)))
+    return out
 
 
 # --------------------------------------------------------------------------- Tiingo (optional, keyed)

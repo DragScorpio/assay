@@ -93,6 +93,26 @@ COMMODITIES: dict[str, Commodity] = {
         fred_price_series="PCOPPUSDM",
         fred_unit_factor=1.0 / _LB_PER_TONNE,
     ),
+    "platinum": Commodity(
+        "platinum",
+        "Platinum",
+        ("platinum", "xpt", "pl=f"),
+        "PL=F",
+        "USD/oz",
+        1000.0,
+        "marginal (high-cost producer) all-in cost, estimate ~2025",
+        "PGM miner AISC estimate",
+    ),
+    "palladium": Commodity(
+        "palladium",
+        "Palladium",
+        ("palladium", "xpd", "pa=f"),
+        "PA=F",
+        "USD/oz",
+        1100.0,
+        "marginal (high-cost producer) all-in cost, estimate ~2025",
+        "PGM miner AISC estimate",
+    ),
 }
 
 

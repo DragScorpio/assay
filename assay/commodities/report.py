@@ -14,6 +14,7 @@ from typing import Optional
 
 from ..engine.valuability import Valuability
 from ..provenance import Figure
+from .monetary import MonetaryLens
 from .realprice import RealPriceAnchor
 from .registry import Commodity
 
@@ -25,6 +26,7 @@ class CommodityReport:
     floor: Figure  # Tier 2 cost-of-production estimate
     valuability: Valuability
     real_price: Optional[RealPriceAnchor] = None  # Tier 1, consumed commodities only
+    monetary_lens: Optional[MonetaryLens] = None  # store-of-value metals only
 
 
 def fmt_value(value: float, unit: str) -> str:
@@ -115,14 +117,37 @@ def render_commodity_markdown(report: CommodityReport) -> str:
             f"{fmt_unit(floor)}."
         )
     elif c.monetary:
-        premium = (spot.value - floor.value) / floor.value * 100
-        out.append(
-            f"> {c.name} trades at {fmt_unit(spot)}. The cost to produce it is about {fmt_unit(floor)}, "
-            f"a floor, not a fair value: {c.name} pays no cash, so most of its worth is monetary, a "
-            f"store of value that arithmetic cannot price. The price sits {premium:+.0f}% above the "
-            "production floor; whether that monetary premium is justified is a question of conviction, "
-            "not calculation, and Assay will not fake it."
+        lens = report.monetary_lens
+        verdict = (
+            f"> {c.name} trades at {fmt_unit(spot)}. The cost to produce it is about {fmt_unit(floor)} "
+            f"(the supply floor); {c.name} pays no cash, so the rest is monetary."
         )
+        gauges = []
+        if lens is not None and lens.real_pct is not None:
+            gauges.append(
+                f"its inflation-adjusted price is higher than {lens.real_pct:.0f}% of its "
+                f"{lens.real_span} history"
+            )
+        if lens is not None and lens.m2_pct is not None:
+            gauges.append(
+                f"versus US money supply (M2) it is higher than {lens.m2_pct:.0f}% of its "
+                f"{lens.m2_span} history"
+            )
+        if gauges:
+            verdict += (
+                " By its own monetary history, "
+                + ", and ".join(gauges)
+                + ". That is where it stands "
+                "by the yardsticks we can ground; whatever sits beyond even these is conviction, not "
+                "calculation, and Assay will not price it."
+            )
+        else:
+            premium = (spot.value - floor.value) / floor.value * 100
+            verdict += (
+                f" The price sits {premium:+.0f}% above the floor; whether that monetary premium is "
+                "justified is conviction, not calculation, and Assay will not fake it."
+            )
+        out.append(verdict)
     elif real_price is not None:
         out.append(
             f"> {c.name} trades at {fmt_unit(spot)}. Two anchors bracket it: the marginal cost of "
@@ -158,14 +183,40 @@ def render_commodity_markdown(report: CommodityReport) -> str:
         f"({floor.tier.label}) | {floor.source.name}{floor_loc} |"
     )
 
+    lens = report.monetary_lens
+    if c.monetary and lens is not None:
+        out += [
+            "",
+            "### Monetary context",
+            "",
+            "| Gauge | Where it sits today | Source |",
+            "|---|---|---|",
+        ]
+        if lens.real_pct is not None:
+            out.append(
+                f"| Real price (purchasing power) | higher than {lens.real_pct:.0f}% of {lens.real_span} "
+                "| Yahoo history deflated by CPI (FRED) |"
+            )
+        if lens.m2_pct is not None:
+            out.append(
+                f"| Price vs money supply (M2) | higher than {lens.m2_pct:.0f}% of {lens.m2_span} "
+                "| Yahoo history vs M2 (FRED) |"
+            )
+        out += [
+            "",
+            "Relative gauges, not a value: high means historically rich by that measure, low means "
+            "cheap. They assume the monetary past is a guide, which a reflexive store of value can break.",
+        ]
+
     out += [
         "",
         "### How to read this",
         "",
         "A commodity produces no cash, so it has no intrinsic value the way a business does. Assay "
-        "grounds two things where it can: the marginal cost of production (the supply floor) and, for "
-        "a consumed commodity, the long-run real price it has averaged in today's dollars (the demand "
-        "side). The premium above these is the market's story, not a fundamental value.",
+        "grounds what it can: the marginal cost of production (the supply floor) for every commodity; "
+        "the long-run real price it has averaged in today's dollars for a consumed one; and, for a "
+        "store-of-value metal, where its price sits versus its own purchasing-power and money-supply "
+        "history. The premium beyond these is the market's story, not a fundamental value.",
         "",
         _TIER_NOTE,
         "",

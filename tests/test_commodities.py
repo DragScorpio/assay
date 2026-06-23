@@ -58,6 +58,22 @@ def test_consumed_report_triangulates_with_real_price():
     assert "fairly valued" in md.lower()  # spot 73 is inside the 49-94 real range
 
 
+def test_monetary_report_shows_context_and_keeps_the_floor():
+    from assay.commodities.monetary import MonetaryLens
+
+    gold = COMMODITIES["gold"]
+    spot, floor = _figs(gold, 4000.0)
+    lens = MonetaryLens(real_pct=99.0, real_span="2000-2026", m2_pct=95.0, m2_span="2000-2026")
+    report = CommodityReport(gold, spot, floor, assess_commodity(gold, spot, floor), None, lens)
+    md = render_commodity_markdown(report)
+
+    assert "Monetary context" in md
+    assert "purchasing power" in md.lower()
+    assert "money supply" in md.lower()
+    assert "99% of" in md  # the percentile gauge
+    assert "1,800" in md  # the production floor is still shown alongside
+
+
 def test_report_shows_floor_premium_and_units():
     gold = COMMODITIES["gold"]
     spot, floor = _figs(gold, gold.production_floor * 2.0)
