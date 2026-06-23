@@ -17,6 +17,9 @@ from ..models.base import Assumption
 FREDGRAPH_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
 RISK_FREE_SERIES = "DGS10"  # 10-year Treasury constant maturity
 DEFAULT_EQUITY_RISK_PREMIUM = 0.05  # a standard long-run equity premium
+CPI_SERIES = (
+    "CPIAUCSL"  # CPI for All Urban Consumers; deflates commodity prices into today's dollars
+)
 
 
 def risk_free_rate(client: Optional[httpx.Client] = None) -> Optional[float]:
@@ -51,6 +54,38 @@ def _parse_fred_latest(text: str) -> Optional[float]:
         except ValueError:
             continue
     return None
+
+
+def fetch_series(series_id: str, client: Optional[httpx.Client] = None) -> list[tuple[str, float]]:
+    """Fetch a full FRED series as [(date, value), ...], keyless via the public CSV."""
+    owns = client is None
+    client = client or httpx.Client(timeout=30.0)
+    try:
+        resp = client.get(FREDGRAPH_CSV_URL.format(series=series_id))
+        resp.raise_for_status()
+        text = resp.text
+    finally:
+        if owns:
+            client.close()
+    return _parse_fred_series(text)
+
+
+def _parse_fred_series(text: str) -> list[tuple[str, float]]:
+    """Parse a FRED CSV into (date, value) rows, skipping the header and missing (".") values."""
+    rows = [r for r in text.strip().splitlines() if r.strip()]
+    out: list[tuple[str, float]] = []
+    for row in rows[1:]:
+        parts = row.split(",")
+        if len(parts) < 2:
+            continue
+        date, raw = parts[0].strip(), parts[1].strip()
+        if not date or raw in (".", ""):
+            continue
+        try:
+            out.append((date, float(raw)))
+        except ValueError:
+            continue
+    return out
 
 
 def discount_rate_assumption(

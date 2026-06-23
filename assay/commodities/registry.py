@@ -6,12 +6,18 @@ level below which supply contracts, which is the conceptually correct floor and 
 average producer's cost. They are ballpark figures (~2025), labeled clearly as estimates and updated
 by hand. ``monetary`` marks the metals whose price is dominated by store-of-value demand rather than
 consumption; for those the floor understates value the most, because their worth is mostly monetary.
+
+Consumed commodities also carry a FRED price-history series id, used to compute a data-driven
+long-run real-price anchor (see :mod:`assay.commodities.realprice`). ``fred_unit_factor`` converts
+the FRED series unit into ``unit`` (e.g. copper is published per metric ton, displayed per pound).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional
+
+_LB_PER_TONNE = 2204.62
 
 
 @dataclass(frozen=True)
@@ -25,6 +31,8 @@ class Commodity:
     floor_basis: str  # what the floor is and roughly when, for the provenance locator
     floor_source: str  # who the estimate comes from
     monetary: bool = False  # a store-of-value metal (price mostly above the floor is monetary)
+    fred_price_series: Optional[str] = None  # FRED price history (for the real-price anchor)
+    fred_unit_factor: float = 1.0  # multiply a FRED value by this to reach `unit`
 
 
 # Floors are approximate MARGINAL-producer cost estimates (~2025), not live data. See module docstring.
@@ -60,6 +68,7 @@ COMMODITIES: dict[str, Commodity] = {
         50.0,
         "marginal-barrel breakeven (high-cost producer), estimate ~2025",
         "EIA / shale & oil-sands breakeven",
+        fred_price_series="MCOILWTICO",
     ),
     "natgas": Commodity(
         "natgas",
@@ -70,6 +79,7 @@ COMMODITIES: dict[str, Commodity] = {
         3.0,
         "marginal dry-gas breakeven (high-cost producer), estimate ~2025",
         "EIA / dry-gas breakeven",
+        fred_price_series="MHHNGSP",
     ),
     "copper": Commodity(
         "copper",
@@ -80,6 +90,8 @@ COMMODITIES: dict[str, Commodity] = {
         4.0,
         "marginal (incentive) cost, estimate ~2025",
         "Industry cost-curve estimate",
+        fred_price_series="PCOPPUSDM",
+        fred_unit_factor=1.0 / _LB_PER_TONNE,
     ),
 }
 
