@@ -1,0 +1,5 @@
+# Project Streamlit config. Turn off usage telemetry so the app phones home to no one.
+# This applies when you run `streamlit run` from the project root; the assay-ui launcher
+# also passes the flag explicitly so it holds no matter where you launch from.
+[browser]
+gatherUsageStats = false
