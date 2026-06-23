@@ -12,6 +12,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from assay.commodities.pipeline import value_commodity
+from assay.commodities.registry import resolve_commodity
+from assay.commodities.report import fmt_unit, render_commodity_markdown
 from assay.engine.report import fmt_pct, fmt_share, render_markdown
 from assay.pipeline import load_inputs, report_for
 
@@ -28,10 +31,39 @@ st.caption(
     "market price, every number sourced. Not investment advice."
 )
 
-ticker = st.text_input("US-listed ticker", value="AAPL").strip().upper()
+ticker = st.text_input("Ticker or commodity (e.g. AAPL, gold, oil)", value="AAPL").strip()
 if not ticker:
     st.stop()
 
+# Commodities take a simpler view: no cash flows, so no triangulation, just spot vs the floor.
+commodity = resolve_commodity(ticker)
+if commodity is not None:
+    creport = value_commodity(commodity)
+    st.subheader(commodity.name)
+    clevel = creport.valuability.level
+    ccolor = {"HIGH": "green", "MEDIUM": "orange", "LOW": "red"}.get(clevel, "gray")
+    st.markdown(f"**Valuability: :{ccolor}[{clevel}].** {creport.valuability.rationale}")
+    if creport.spot is not None:
+        premium = (creport.spot.value - creport.floor.value) / creport.floor.value * 100
+        cc = st.columns(2)
+        cc[0].metric("Spot price", fmt_unit(creport.spot))
+        cc[1].metric(
+            "Production floor (estimate)",
+            fmt_unit(creport.floor),
+            f"price is {premium:+.0f}% vs floor",
+            delta_color="off",
+        )
+    else:
+        st.metric("Production floor (estimate)", fmt_unit(creport.floor))
+    st.caption(
+        "A commodity has no cash flow, so no intrinsic value like a business. The floor is the "
+        "marginal cost of production; the premium above it is the market's story, not fundamental."
+    )
+    with st.expander("Full report (every source)"):
+        st.markdown(_no_latex(render_commodity_markdown(creport)))
+    st.stop()
+
+ticker = ticker.upper()
 try:
     inputs = load_inputs(ticker)
 except Exception as exc:  # unknown ticker, or a data source is down

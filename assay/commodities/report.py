@@ -23,7 +23,7 @@ class CommodityReport:
     valuability: Valuability
 
 
-def _fmt_unit(fig: Figure) -> str:
+def fmt_unit(fig: Figure) -> str:
     """Format a per-unit price, e.g. $1,300.00/oz or $50.00/bbl."""
     per = fig.unit.replace("USD/", "/")  # "USD/oz" -> "/oz"
     return f"${fig.value:,.2f}{per}"
@@ -72,26 +72,26 @@ def render_commodity_markdown(report: CommodityReport) -> str:
         premium = (spot.value - floor.value) / floor.value * 100
         driver = "supply and demand" + (", plus store-of-value demand" if c.monetary else "")
         out.append(
-            f"> {c.name} trades at {_fmt_unit(spot)}. The estimated cost-of-production floor is about "
-            f"{_fmt_unit(floor)}. The price sits {premium:+.0f}% versus that floor; the premium is "
+            f"> {c.name} trades at {fmt_unit(spot)}. The estimated cost-of-production floor is about "
+            f"{fmt_unit(floor)}. The price sits {premium:+.0f}% versus that floor; the premium is "
             f"{driver}, which Assay does not value as fundamental."
         )
     else:
         out.append(
             f"> Could not fetch a spot price. The estimated cost-of-production floor is about "
-            f"{_fmt_unit(floor)}."
+            f"{fmt_unit(floor)}."
         )
 
     out += ["", "### Anchor", "", "| What | Value | Tier | Source |", "|---|---|---|---|"]
     if spot is not None:
         loc = f" ({spot.source.locator})" if spot.source.locator else ""
         out.append(
-            f"| Spot price | {_fmt_unit(spot)} | {int(spot.tier)} ({spot.tier.label}) | "
+            f"| Spot price | {fmt_unit(spot)} | {int(spot.tier)} ({spot.tier.label}) | "
             f"{spot.source.name}{loc} |"
         )
     floor_loc = f" ({floor.source.locator})" if floor.source.locator else ""
     out.append(
-        f"| Cost-of-production floor (estimate) | {_fmt_unit(floor)} | {int(floor.tier)} "
+        f"| Cost-of-production floor (estimate) | {fmt_unit(floor)} | {int(floor.tier)} "
         f"({floor.tier.label}) | {floor.source.name}{floor_loc} |"
     )
 
