@@ -67,6 +67,17 @@ pytest                                   # unit tests
 
 No API keys or signup required. `assay AAPL` works out of the box: filings come free from SEC EDGAR (which only asks for a contact string in `ASSAY_SEC_USER_AGENT`), and prices come from a free, keyless source. Optional keys (Tiingo for prices, FRED for the discount rate) only upgrade data quality; they never gate the app.
 
+## Interactive UI (optional)
+
+For a visual version, install the UI extra and launch the local app:
+
+```bash
+uv pip install -e ".[ui]"
+assay-ui            # or: streamlit run assay/ui/app.py
+```
+
+Type a ticker, then drag the assumption sliders (growth, discount rate, forever-growth) and watch the valuation and the triangulation recompute live. Same engine, same numbers, a friendlier view.
+
 ## How it works
 
 1. **Data** (`assay/data`): per-source adapters fetch primary figures and tag each with its `Tier` and `Source`. SEC EDGAR for filings, FRED for the risk-free rate, a price API for the quote. Nothing downstream accepts a bare number.

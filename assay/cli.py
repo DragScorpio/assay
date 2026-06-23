@@ -1,7 +1,7 @@
 """Command line entry point.
 
 assay demo            full report on a fictional company, no keys needed
-assay value TICKER    value a real US-listed company (needs data keys; lands in v0.2)
+assay value TICKER    value a real US-listed company
 assay TICKER          shorthand for `assay value TICKER`
 """
 
@@ -10,23 +10,11 @@ from __future__ import annotations
 import sys
 from typing import Optional
 
-from .data.analysts import fetch_targets
 from .data.sample import acme_inputs
-from .engine.report import build_report, render_markdown
-from .engine.triangulate import triangulate
-from .engine.valuability import assess
-from .models import DEFAULT_MODELS
-from .models.base import CompanyInputs
+from .engine.report import render_markdown
+from .pipeline import load_inputs, report_for
 
 _USAGE = "usage: assay <demo | value TICKER | TICKER>"
-
-
-def _report_for(inputs: CompanyInputs) -> str:
-    triangulation = triangulate(inputs, DEFAULT_MODELS)
-    valuability = assess(inputs)
-    analyst = fetch_targets(inputs.ticker)
-    report = build_report(inputs, triangulation, valuability, analyst)
-    return render_markdown(report)
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -42,6 +30,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
+
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help"):
         print(_USAGE)
@@ -49,17 +38,15 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     cmd = argv[0]
     if cmd == "demo":
-        print(_report_for(acme_inputs()))
+        print(render_markdown(report_for(acme_inputs())))
         return 0
 
     ticker = argv[1] if cmd == "value" and len(argv) > 1 else cmd
 
     import httpx
 
-    from .data.edgar import fetch_company_inputs
-
     try:
-        inputs = fetch_company_inputs(ticker)
+        inputs = load_inputs(ticker)
     except (LookupError, NotImplementedError) as exc:
         print(f"assay: {exc}", file=sys.stderr)
         return 2
@@ -67,28 +54,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"assay: could not reach SEC EDGAR ({exc})", file=sys.stderr)
         return 2
 
-    # Attach a market price (Tier 0) if a provider is configured. Offline -> no price, and the
-    # report omits the comparison rather than failing.
-    from .data.prices import latest_price
-
-    try:
-        price = latest_price(ticker)
-        if price is not None:
-            inputs.price = price
-    except (NotImplementedError, RuntimeError, LookupError, httpx.HTTPError) as exc:
-        print(f"assay: price unavailable ({exc}); continuing without it", file=sys.stderr)
-
-    # Attach a live, keyless discount rate (FRED). On failure the methods use the default rate.
-    from .data.fred import discount_rate_assumption
-
-    try:
-        rate = discount_rate_assumption()
-        if rate is not None:
-            inputs.suggested_discount_rate = rate
-    except httpx.HTTPError as exc:
-        print(f"assay: live discount rate unavailable ({exc}); using the default", file=sys.stderr)
-
-    print(_report_for(inputs))
+    print(render_markdown(report_for(inputs)))
     return 0
 
 
