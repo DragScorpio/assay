@@ -29,7 +29,15 @@ This is not a blue ocean and the README won't pretend it is. It is a defensible 
 
 ## What the output looks like
 
-A single report, layered so you can stop at any depth (this is the design target; see [`docs/DESIGN.md`](docs/DESIGN.md)):
+`assay NVDA` on real data, no keys: a three-method intrinsic value against the live market price.
+
+![assay NVDA, a triangulated intrinsic value (asset floor, earnings power, DCF) against the live market price](docs/images/assay-nvda.png)
+
+When the fundamentals are not there, Assay refuses rather than inventing a number. `assay SPCX` resolves to SpaceX, which has a market price but no durable cash flows in its filings, so every method declines:
+
+![assay SPCX, Assay declines to value SpaceX on fundamentals because there are no cash flows to value, even though a market price exists](docs/images/assay-spcx.png)
+
+A single report, layered so you can stop at any depth (full reasoning in [`docs/DESIGN.md`](docs/DESIGN.md)):
 
 - **Layer 0 (Verdict).** One honest sentence. "Worth $34 to $53 (base $44); market pays $48.20; the whole gap rides on one assumption: long-run growth."
 - **Layer 1 (Triangulation).** Three independent methods side by side, versus price.
