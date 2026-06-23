@@ -41,6 +41,23 @@ def test_missing_spot_degrades_not_crashes():
     assert "Could not fetch a spot price" in md
 
 
+def test_consumed_report_triangulates_with_real_price():
+    from assay.commodities.realprice import RealPriceAnchor
+
+    oil = COMMODITIES["oil"]
+    spot, floor = _figs(oil, 73.0)
+    rp = RealPriceAnchor(avg=75.0, low=49.0, high=94.0, n=480, span="1986-2026")
+    val = assess_commodity(oil, spot, floor, rp)
+    report = CommodityReport(oil, spot, floor, val, rp)
+    md = render_commodity_markdown(report)
+
+    assert val.level == "MEDIUM"
+    assert "long-run real price" in md.lower()
+    assert "1986-2026" in md
+    assert "mean reversion" in md.lower()  # the caveat is stamped on the anchor
+    assert "fairly valued" in md.lower()  # spot 73 is inside the 49-94 real range
+
+
 def test_report_shows_floor_premium_and_units():
     gold = COMMODITIES["gold"]
     spot, floor = _figs(gold, gold.production_floor * 2.0)

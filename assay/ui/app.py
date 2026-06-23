@@ -14,7 +14,7 @@ import streamlit as st
 
 from assay.commodities.pipeline import value_commodity
 from assay.commodities.registry import resolve_commodity
-from assay.commodities.report import fmt_unit, render_commodity_markdown
+from assay.commodities.report import fmt_unit, fmt_value, render_commodity_markdown
 from assay.engine.report import fmt_pct, fmt_share, render_markdown
 from assay.pipeline import load_inputs, report_for
 
@@ -55,9 +55,18 @@ if commodity is not None:
         )
     else:
         st.metric("Production floor (estimate)", fmt_unit(creport.floor))
+    if creport.real_price is not None:
+        rp = creport.real_price
+        st.metric(
+            f"Long-run real price ({rp.span})",
+            fmt_value(rp.avg, creport.commodity.unit),
+            f"range {fmt_value(rp.low, creport.commodity.unit)} to {fmt_value(rp.high, creport.commodity.unit)}",
+            delta_color="off",
+        )
     st.caption(
         "A commodity has no cash flow, so no intrinsic value like a business. The floor is the "
-        "marginal cost of production; the premium above it is the market's story, not fundamental."
+        "marginal cost of production; for a consumed commodity the long-run real price is the demand "
+        "side; the premium above them is the market's story, not fundamental."
     )
     with st.expander("Full report (every source)"):
         st.markdown(_no_latex(render_commodity_markdown(creport)))
