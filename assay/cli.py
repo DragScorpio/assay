@@ -43,6 +43,17 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     ticker = argv[1] if cmd == "value" and len(argv) > 1 else cmd
 
+    # Commodities (gold, oil, ...) are valued on their own terms, not as companies.
+    from .commodities.registry import resolve_commodity
+
+    commodity = resolve_commodity(ticker)
+    if commodity is not None:
+        from .commodities.pipeline import value_commodity
+        from .commodities.report import render_commodity_markdown
+
+        print(render_commodity_markdown(value_commodity(commodity)))
+        return 0
+
     import httpx
 
     try:
