@@ -112,4 +112,6 @@ data/       gitignored cache for fetched filings and API responses
 
 ## License
 
-MIT. Uses only public, unrestricted libraries and public data (SEC EDGAR, FRED).
+Copyright (c) 2026 DragScorpio. Licensed under **AGPL-3.0-or-later** (see [`LICENSE`](LICENSE)).
+
+You may use, study, and run Assay freely. If you modify it, or run a modified version as a network service, you must release your source under the AGPL and keep attribution. Built on public, unrestricted libraries and public data (SEC EDGAR, FRED, Yahoo Finance).
