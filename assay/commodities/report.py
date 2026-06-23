@@ -39,8 +39,10 @@ def assess_commodity(commodity: Commodity, spot: Optional[Figure], floor: Figure
     if commodity.monetary:
         return Valuability(
             "LOW",
-            f"The production floor is real, but the ~{premium * 100:.0f}% premium over it is monetary "
-            "and store-of-value demand, which has no cash flow to value. Assay anchors only the floor.",
+            f"The floor is only the cost to produce it, not a fair value. Most of {commodity.name}'s "
+            f"worth (~{premium * 100:.0f}% above the floor) is monetary: a store of value with no cash "
+            "flow, which no arithmetic can price. Assay grounds the floor and is honest that the rest "
+            "is monetary conviction, not calculation.",
         )
     return Valuability(
         "MEDIUM",
@@ -70,12 +72,21 @@ def render_commodity_markdown(report: CommodityReport) -> str:
     ]
     if spot is not None:
         premium = (spot.value - floor.value) / floor.value * 100
-        driver = "supply and demand" + (", plus store-of-value demand" if c.monetary else "")
-        out.append(
-            f"> {c.name} trades at {fmt_unit(spot)}. The estimated cost-of-production floor is about "
-            f"{fmt_unit(floor)}. The price sits {premium:+.0f}% versus that floor; the premium is "
-            f"{driver}, which Assay does not value as fundamental."
-        )
+        if c.monetary:
+            out.append(
+                f"> {c.name} trades at {fmt_unit(spot)}. The cost to produce it is about "
+                f"{fmt_unit(floor)}, a floor, not a fair value: {c.name} pays no cash, so most of its "
+                f"worth is monetary, a store of value that arithmetic cannot price. The price sits "
+                f"{premium:+.0f}% above the production floor; whether that monetary premium is "
+                "justified is a question of conviction, not calculation, and Assay will not fake it."
+            )
+        else:
+            out.append(
+                f"> {c.name} trades at {fmt_unit(spot)}. The estimated marginal cost of production is "
+                f"about {fmt_unit(floor)}, the floor below which supply contracts. The price sits "
+                f"{premium:+.0f}% above that floor; that premium is supply and demand, which Assay "
+                "reports but does not value as a fundamental."
+            )
     else:
         out.append(
             f"> Could not fetch a spot price. The estimated cost-of-production floor is about "

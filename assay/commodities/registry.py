@@ -1,9 +1,11 @@
 """The set of commodities Assay knows, each with a Yahoo spot symbol and a cost-of-production floor.
 
 The floor is a curated industry estimate (Tier 2), not primary-source data: there is no clean free
-feed for marginal cost of production. The values are ballpark all-in sustaining cost / breakeven
-figures, labeled clearly as estimates and updated by hand periodically. ``monetary`` marks the
-metals whose price is dominated by store-of-value demand rather than consumption.
+feed for marginal cost of production. The values are the *marginal* (high-cost producer) cost, the
+level below which supply contracts, which is the conceptually correct floor and runs higher than the
+average producer's cost. They are ballpark figures (~2025), labeled clearly as estimates and updated
+by hand. ``monetary`` marks the metals whose price is dominated by store-of-value demand rather than
+consumption; for those the floor understates value the most, because their worth is mostly monetary.
 """
 
 from __future__ import annotations
@@ -19,13 +21,13 @@ class Commodity:
     aliases: tuple[str, ...]
     yahoo_symbol: str  # the futures symbol Yahoo serves a price for, e.g. GC=F
     unit: str  # "USD/oz", "USD/bbl", "USD/MMBtu", "USD/lb"
-    production_floor: float  # estimated marginal cost of production, in the same unit
+    production_floor: float  # estimated MARGINAL cost of production, in the same unit
     floor_basis: str  # what the floor is and roughly when, for the provenance locator
     floor_source: str  # who the estimate comes from
     monetary: bool = False  # a store-of-value metal (price mostly above the floor is monetary)
 
 
-# Floors are approximate industry estimates (~2024), not live data. See module docstring.
+# Floors are approximate MARGINAL-producer cost estimates (~2025), not live data. See module docstring.
 COMMODITIES: dict[str, Commodity] = {
     "gold": Commodity(
         "gold",
@@ -33,8 +35,8 @@ COMMODITIES: dict[str, Commodity] = {
         ("gold", "xau", "gc=f"),
         "GC=F",
         "USD/oz",
-        1300.0,
-        "all-in sustaining cost, industry estimate ~2024",
+        1800.0,
+        "marginal (high-cost producer) all-in cost, estimate ~2025",
         "World Gold Council / miner AISC",
         monetary=True,
     ),
@@ -44,8 +46,8 @@ COMMODITIES: dict[str, Commodity] = {
         ("silver", "xag", "si=f"),
         "SI=F",
         "USD/oz",
-        16.0,
-        "all-in sustaining cost, industry estimate ~2024",
+        20.0,
+        "marginal (high-cost producer) all-in cost, estimate ~2025",
         "Primary-silver miner AISC",
         monetary=True,
     ),
@@ -56,7 +58,7 @@ COMMODITIES: dict[str, Commodity] = {
         "CL=F",
         "USD/bbl",
         50.0,
-        "marginal cost of high-cost production, estimate ~2024",
+        "marginal-barrel breakeven (high-cost producer), estimate ~2025",
         "EIA / shale & oil-sands breakeven",
     ),
     "natgas": Commodity(
@@ -65,8 +67,8 @@ COMMODITIES: dict[str, Commodity] = {
         ("natgas", "gas", "ng=f"),
         "NG=F",
         "USD/MMBtu",
-        2.5,
-        "marginal cost of dry-gas production, estimate ~2024",
+        3.0,
+        "marginal dry-gas breakeven (high-cost producer), estimate ~2025",
         "EIA / dry-gas breakeven",
     ),
     "copper": Commodity(
@@ -75,8 +77,8 @@ COMMODITIES: dict[str, Commodity] = {
         ("copper", "hg=f"),
         "HG=F",
         "USD/lb",
-        3.0,
-        "90th-percentile cash cost, estimate ~2024",
+        4.0,
+        "marginal (incentive) cost, estimate ~2025",
         "Industry cost-curve estimate",
     ),
 }
