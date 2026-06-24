@@ -70,6 +70,12 @@ if commodity is not None:
             bits.append(f"after inflation, {pct_reading(lens.real_pct, lens.real_span)}")
         if lens.m2_pct is not None:
             bits.append(f"vs money supply, {pct_reading(lens.m2_pct, lens.m2_span)}")
+        if lens.m2_implied is not None and creport.spot is not None and lens.m2_implied > 0:
+            gap = (creport.spot.value - lens.m2_implied) / lens.m2_implied * 100
+            bits.append(
+                f"money-supply-implied ~{fmt_value(lens.m2_implied, creport.commodity.unit)} "
+                f"(market {gap:+.0f}%)"
+            )
         if bits:
             st.markdown(
                 "**Monetary context** (relative gauges, not a value): " + "; ".join(bits) + "."

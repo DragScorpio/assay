@@ -26,11 +26,18 @@ class MonetaryLens:
     real_span: str  # e.g. "2000-2026"
     m2_pct: Optional[float]  # % of price/M2 history below today's ratio (vs money supply)
     m2_span: str
+    m2_implied: Optional[float] = None  # price at the median price/M2 ratio times today's M2
 
 
 def _pct_rank(sorted_vals: list[float], x: float) -> float:
     """Percent of values at or below x, in [0, 100]."""
     return 100.0 * bisect.bisect_right(sorted_vals, x) / len(sorted_vals)
+
+
+def _median(sorted_vals: list[float]) -> float:
+    n = len(sorted_vals)
+    mid = n // 2
+    return sorted_vals[mid] if n % 2 else (sorted_vals[mid - 1] + sorted_vals[mid]) / 2
 
 
 def monetary_lens(
@@ -69,10 +76,13 @@ def monetary_lens(
             m2_years.append(date[:4])
     m2_pct: Optional[float] = None
     m2_span = ""
+    m2_implied: Optional[float] = None
     if len(ratios) >= min_obs and m2_latest and m2_latest > 0:
-        m2_pct = _pct_rank(sorted(ratios), spot_value * unit_factor / m2_latest)
+        ordered = sorted(ratios)
+        m2_pct = _pct_rank(ordered, spot_value * unit_factor / m2_latest)
+        m2_implied = _median(ordered) * m2_latest  # price at the typical ratio, in display units
         m2_span = f"{m2_years[0]}-{m2_years[-1]}"
 
     if real_pct is None and m2_pct is None:
         return None
-    return MonetaryLens(real_pct, real_span, m2_pct, m2_span)
+    return MonetaryLens(real_pct, real_span, m2_pct, m2_span, m2_implied)

@@ -13,6 +13,7 @@ def test_lens_places_spot_at_top_of_a_rising_history():
     assert lens.real_pct == 100.0  # 100 is above every deflated historical price
     assert lens.m2_pct == 100.0
     assert lens.real_span == "2000-2026"
+    assert lens.m2_implied == 14.0  # median of the 1..27 price history, with M2 flat at 1000
 
 
 def test_lens_none_when_too_little_history():

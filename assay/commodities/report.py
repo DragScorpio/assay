@@ -156,12 +156,17 @@ def render_commodity_markdown(report: CommodityReport) -> str:
                 f"versus the money supply (M2) it is {pct_reading(lens.m2_pct, lens.m2_span)}"
             )
         if gauges:
+            verdict += " By its own monetary history, " + ", and ".join(gauges) + "."
+            if lens is not None and lens.m2_implied and lens.m2_implied > 0:
+                gap = (spot.value - lens.m2_implied) / lens.m2_implied * 100
+                verdict += (
+                    " As a rough reference, at its typical (median) ratio to the money supply it would "
+                    f"be about {fmt_value(lens.m2_implied, c.unit)}, so the market is {gap:+.0f}% above "
+                    "that (a reference, not a fair value)."
+                )
             verdict += (
-                " By its own monetary history, "
-                + ", and ".join(gauges)
-                + ". That is where it stands "
-                "by the yardsticks we can ground; whatever sits beyond even these is conviction, not "
-                "calculation, and Assay will not price it."
+                " Whatever sits beyond even these is conviction, not calculation, and Assay will not "
+                "price it."
             )
         else:
             premium = (spot.value - floor.value) / floor.value * 100
@@ -223,6 +228,12 @@ def render_commodity_markdown(report: CommodityReport) -> str:
             out.append(
                 f"| Price vs money supply (M2) | {pct_reading(lens.m2_pct, lens.m2_span)} "
                 "| Yahoo price vs M2 (FRED) |"
+            )
+        if lens.m2_implied is not None and spot is not None and lens.m2_implied > 0:
+            gap = (spot.value - lens.m2_implied) / lens.m2_implied * 100
+            out.append(
+                f"| Money-supply-implied price | ~{fmt_value(lens.m2_implied, c.unit)} (market {gap:+.0f}%) "
+                "| median price/M2 ratio x today's M2 |"
             )
         out += [
             "",
