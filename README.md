@@ -8,7 +8,7 @@ So I wanted to look the other way, toward the part that does not move. Long befo
 
 The name is deliberate: to *assay* is to test ore and determine its true metal content. That is what this does to a business.
 
-> **Status: scaffold.** The architecture, the data-credibility model, and the report shape are in place, and `assay demo` runs the whole pipeline end to end on a fictional company with no API key. Real data adapters (SEC EDGAR, FRED, prices) are stubbed with their endpoints documented and filled in next.
+> **Status: working.** Companies are valued on real SEC EDGAR filings, a live price, and FRED macro data, three methods triangulated, with no API key. Commodities are valued on a cost-of-production floor, a long-run real price, and, for metals, a monetary lens. `assay demo` runs the whole pipeline on a fictional company; `assay AAPL` and `assay gold` run on live data.
 
 ## Why this is not another stock-valuation site
 
@@ -48,15 +48,19 @@ A single report, layered so you can stop at any depth (full reasoning in [`docs/
 
 ## Commodities
 
-Assay also values commodities, on their own terms. A commodity produces no cash, so there is no discounted cash flow and no intrinsic value the way a business has one. The honest anchor is the **cost of production**: the marginal (high-cost) producer's cost, the floor below which supply contracts and the price tends to recover. Assay reports the live spot price against that floor and is plain that the premium above it is the market's story, not a fundamental value.
+Assay also values commodities, on their own terms. A commodity produces no cash, so there is no discounted cash flow and no intrinsic value the way a business has one. Assay grounds what it can and is honest about the rest, with up to three anchors:
+
+- **Cost-of-production floor** (supply). The marginal, high-cost producer's cost, the level below which supply contracts and the price tends to recover. A curated industry estimate, the one place Assay leans on a hand-set number, labeled as such.
+- **Long-run real price** (demand, for consumed commodities like oil, copper, and gas). What it has actually been worth in today's dollars over decades, from FRED price history deflated by CPI. Spot reads as cheap, fair, or rich against its own real history.
+- **Monetary lens** (for store-of-value metals like gold and silver). Where the price sits versus its own purchasing-power and money-supply history, in plain words ("near a 26-year high"), plus a money-supply-implied reference price. Relative gauges, never a fair value.
 
 ```bash
-assay gold        # also: oil, silver, natgas, copper (the UI handles them too)
+assay gold        # also: oil, silver, copper, natgas, platinum, palladium (the UI handles them too)
 ```
 
-![assay gold, the spot price against the cost-of-production floor; gold's premium is monetary, not fundamental](docs/images/assay-gold.png)
+![assay gold: the cost-of-production floor plus the monetary lens, with gold near a 26-year high by its own monetary measures and a money-supply-implied reference well below the market](docs/images/assay-gold-updated.png)
 
-Gold is the sharpest case. It pays nothing and is held, not consumed, so most of its price is monetary and store-of-value demand far above the production floor. Assay grounds the floor and refuses to fake a value for the rest, because whether that premium is justified is a question of conviction, not calculation. (The floor is a curated industry estimate, the one place Assay leans on a hand-set number, and its tier label says so.)
+Gold is the sharpest case. It is held, not consumed, so most of its price is monetary, far above the production floor. Assay shows the floor, places gold against its own purchasing-power and money-supply history, offers a money-supply-implied reference price, and then refuses to fake a value for whatever sits beyond, because that is conviction, not calculation.
 
 ## The data-credibility tiers
 
